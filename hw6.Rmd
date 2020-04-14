@@ -1,0 +1,234 @@
+---
+title: "hw6"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+  word_document: default
+---
+
+# 1.	A developer of vacation homes is considering purchasing a tract of land near a lake. 
+```{r}
+df = read.csv('vacation.csv')
+model_full = lm(formula = df$Price ~ df$Lot.size + df$Trees + df$Distance, data = df)
+summary(model_full)
+```
+#a. Do the model assumptions appear to be satisfied? If not, which ones are violated?
+    it seems like the model assumptions do not hold. There does not appear to be linear relationship between the 
+    independent variables and dependent variables, also the residuals are not independent because we can see that they are     correlated-- see later input 
+#b. 	What is R2? What does it tell you?
+    R2 = .1239 and adjusted R2 = .09319, this tells us that about 10% of the variation in price is explained by
+    lot size, distance and trees. 
+```{r}
+model1 = lm(df$Price ~ df$Lot.size,data=df)
+summary(model1)
+plot(df$Lot.size,df$Price,main = 'Lot size vs price')+
+  abline(model1)
+```
+```{r}
+model2 = lm(df$Price ~ df$Trees,data=df)
+summary(model2)
+plot(df$Trees,df$Price,main = 'Trees vs price')+
+  abline(model2)
+```
+```{r}
+model3 = lm(df$Price ~ df$Distance,data=df)
+summary(model3)
+model32 = lm(df$Price ~ df$Distance+df$Trees,data=df)
+summary(model32)
+plot(df$Distance,df$Price,main = 'distance from the lake vs price')+abline(model3)
+```
+#  c. 	Which of the explanatory variables is linearly related to the response variable in this (the original) model?
+Trees 
+Adjusted R-squared:  0.1367 
+F-statistic: 10.35 on 1 and 58 DF,  
+p-value: 0.002124
+#  d. 	If necessary, create a new model by removing insignificant variables.
+here we go with model2 which is Price = 56.2612 + 0.7276*Trees   
+#  e. 	Interpret the slopes in the new model.
+houses with no trees are worth $56k relative units....
+every tree will add .7276 additional units of price so $7,276 in the bank for a tree :)
+#  f.	  Predict with 95% confidence the selling price of a 40,000-square foot lot with 50 mature trees that is located 75 feet from the lake.
+from the output below we can see that the 95% CI for price of houses with 40k sqft lot and 50 mature trees located 75 feet from the lake is (2.79,167) in thousands of dollars so (2790,167000)
+```{r}
+a <- df$Price
+x1 <- df$Lot.size
+x2 <- df$Trees
+x3 <- df$Distance
+#here you use x as a name
+fitPrice <- lm(a ~ x1 + x2 + x3) 
+# single value
+prediction = predict(fitPrice, data.frame(x1=40,x2=50,x3=75), interval = "prediction") 
+print(prediction)
+```
+#   g.	  Estimate with 95% confidence the average selling price of all such lots.
+from the output below we can see that the 95% CI for average selling price of such lots is (69.12,100.77) in thousands of dollars so (69120,100770)
+
+
+
+```{r}
+# for the mean
+prediction_mean = predict(fitPrice, data.frame(x1=40,x2=50,x3=75), interval = "confidence")
+print(prediction_mean)
+```
+
+```{r}
+plot(model1$residuals,model2$residuals)
+plot(model1$residuals,model3$residuals)
+plot(model2$residuals,model3$residuals)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+# 2.	The manager of an amusement park would like to be able to predict daily attendance. After some consideration, he decided that the following three factors are critical, yesterday’s attendance, whether it’s a weekday or weekend, and the predicted weather. He then took a random sample of 40 days and recorded the data in the file AMUSEMENT. Since two of the variables are qualitative, he created the following sets if dummy variables:
+Weekend = 1 (if weekend)= 0 (if not)
+Sunny = 1 (if mostly sunny is predicted)= 0 (if not)
+Rain= 1 (if rain is predicted)=  0 (if not)
+
+# a. 	Construct a regression model to predict attendance. Is the model likely to be useful? Include all relevant computer output, organized so that I can follow it.
+We can see from the output below that this is a useful model. All of the coefficients are far from zero with low p-values. The only variable that seems unnecessary is Yesterday because the p-value is somewhat high and coefficient is near zero. 
+
+
+```{r}
+AMUSEMENT = read_xls('AMUSEMENT.xls')
+
+
+model2.full = lm(formula = Attendance ~ Yesterday + Weekend + Sunny + Rain, data=AMUSEMENT)
+model2.2 = lm(formula = Attendance ~ Yesterday + Weekend + Sunny, data=AMUSEMENT)
+model2.3 = lm(formula = Attendance ~ Weekend + Sunny, data=AMUSEMENT)
+weekend = lm(formula = Attendance ~ Weekend,data=AMUSEMENT)
+
+
+print('----------------------------------------------------------------------------')
+summary(model2.1)
+print('----------------------------------------------------------------------------')
+summary(model2.2)
+print('----------------------------------------------------------------------------')
+summary(model2.3)
+print('----------------------------------------------------------------------------')
+summary(weekend)
+
+```
+# b. 	Can we conclude that weather is a factor in determining attendance?
+yes. In general we can assume that weather affects amusement park attendance. There is a strong correlation between attendence and the variable sunny with a low p-value. We don't need the rain variable because it is mutually exclusive (usually) with the sunny variable. 
+# c. 	Determine the best model using the Akaike Information Criterion (AIC) and Mallow’s Cp statistics. How does this affect your choice of final model? Does it change your answer to part (b)?
+
+based on the AIC I would say that the model with all independent variables is the best model. Based on the F-statistic and R2 I would say that the model without Weekend is the best. I will use the model with Yesterday, Weekend and Sunny as the independent variables. No we can still conclude that weather is a factor in attendence. We can see that 
+
+AIC = 2p/n + 2ln(RMSE)
+CP = SSEP/MSEQ - (n - 2*p)
+
+```{r}
+
+#n=length(summary(model2.1)$residuals)
+n=40
+p2.1=5
+p2.2=4
+p2.3=3
+
+RSS2.1 = summary(model2.full)$residuals ** 2
+RSS2.2 = summary(model2.2)$residuals ** 2
+RSS2.3 = summary(model2.3)$residuals ** 2
+
+# MSE for full model with q=5 parameters
+MSEQ = sum(RSS2.1)/n
+
+# RMSE for all models 
+RMSE2.1 = sqrt(sum(RSS2.1)/n)
+RMSE2.2 = sqrt(sum(RSS2.2)/n)
+RMSE2.3 = sqrt(sum(RSS2.3)/n)
+
+# SSEQ for the smaller models
+SSEP2.2=sum(RSS2.2)
+SSEP2.3=sum(RSS2.3)
+
+
+
+# Akaike Information Criterion
+AIC2.1 = (2*p2.1/n) + 2*log(RMSE2.1)
+AIC2.2 = (2*p2.2/n) + 2*log(RMSE2.2)
+AIC2.3 = (2*p2.3/n) + 2*log(RMSE2.3)
+
+# Mallows Cp
+CP2.2=SSEP2.2/MSEQ - (n-2*p2.2)
+CP2.3=SSEP2.3/MSEQ - (n-2*p2.3)
+
+
+print('AIC:')
+print(AIC2.1)
+print(AIC2.2)
+print(AIC2.3)
+print('Cp')
+print(CP2.2)
+print(CP2.3)
+```
+# d. 	Does this data provide sufficient evidence that weekend attendance is, on average, larger than weekday attendance? Support your answer.
+
+Yes because in the full model the coefficient for weekend is 933 with p-value=.005, so there is evidence to conclude that weekend attendance is positively correlated with attendance. So we can say that attendance is, on average larger than weekdy attendance. I also created a simple linear model with just weekend and the R2 for that was .34 so we can say that weekend explains 34% of the variance in attendance. 
+
+# 3.	The general manager of a chain of catalog stores wanted to determine the factors that affect how long it takes to unload a truck delivering orders. A random sample of 50 deliveries to a store was observed. The times (in minutes) to unload the truck, the total number of boxes, and the total weight (in hundreds of pounds) were recorded in the file CATALOG.
+
+# a. 	Determine the multiple regression equation.
+Time = -41 + .6Boxes + .37Weight
+```{r}
+model3.full = lm(formula = Time~Boxes+Weight,data=CATALOG)
+summary(model3.full)
+```
+#b. 	How well does the model fit the data?
+Yes. We have a high adjusted R2=.799, low p-value=2.2e-16, very hight F-statistic=98.37
+# c. 	Perform diagnostics on the model and report your findings.
+I don't even know what this means. 
+# d. 	Is multicollinearity a problem? If so, propose a solution.
+It does not appear to be a problem because the adjusted R2 is not much lower than the multiple R2. If it were a problem we could drop one of the variables which correlates with another causing a problem. 
+
+# e. 	Construct a regression model that includes the information for the time of day.
+the below code will create a new variable 
+
+```{r}
+# encoding morning early afternoon and late afternoon and adding that to the data frame 
+# 1 = morning, 2 = early afternoon, and 3 = late afternoon.
+levels = c(1,2,3)
+morning_labels = c(1,0,0)
+early_afternoon_labels = c(0,1,0)
+late_afternoon_labels = c(0,0,1)
+labels = c('morning','early_afternoon','late_afternoon')
+
+
+# this will create a new column called morning which will store 1 as 1 and other values as zero
+
+CATALOG$morning = factor(CATALOG$Codes,levels=levels,labels=morning_labels)
+CATALOG$early_afternoon = factor(CATALOG$Codes,levels=levels,labels=early_afternoon_labels)
+CATALOG$late_afternoon = factor(CATALOG$Codes,levels=levels,labels=late_afternoon_labels)
+# CATALOG$Codes = factor(CATALOG$Codes,levels=levels,labels=morning_labels)
+
+# df = CATALOG[c(1,2,3,5,6,7)]
+
+model3e = lm(formula = Time ~ Boxes + Weight + morning + early_afternoon + late_afternoon,data=CATALOG)
+summary(model3e)
+```
+# f. 	Does the time of day affect the unloading time? Explain.
+yes it does I am having some issues with the last column. I suspect this has something to do with the fact that there are too many dependent variables. I tried a few different things with encoding these properly, but it did not fix the NA values I am getting for late_afternoon. Specifically I tried to make the codes variable into the morning variable but this did not work and I could not even get a model from that. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+

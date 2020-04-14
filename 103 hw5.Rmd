@@ -1,0 +1,109 @@
+---
+title: "103hw5"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(warn=-1)
+```
+
+
+
+***
+1.   Construct a simple linear regression model for Highway MPG vs Horsepower.
+a.   Is the P-value for the model significant? (Quote the P-value in your response.)
+yes the P-value is 3.7e-11 < .05 so it is significant. 
+b.   What is R2 for the model?
+R2 is .3832 
+c.   Graph the Plot of Fitted Model and include it in your solutions. Use it to describe the problem with the model.
+***
+```{r}
+library(readxl)
+cars <- read_excel("/Users/austinwilson/downloads/93cars.xlsx")
+model <- lm(formula=`MPG Highway`~Horsepower,data=cars)
+#summary(cars)
+#names(cars)
+summary(model)
+
+```
+
+
+```{r}
+
+
+plot(x=cars$Horsepower,y=cars$`MPG Highway`)
+lines(cars$Horsepower, fitted(model), col="blue")
+```
+
+***
+2.   Construct a quadratic model.
+a.   Is the P-value for the model significant? (Quote the P-value in your response.)
+P-value is 9.78e-15 so this is statistically significant 
+b.   What is the P-value for the second-degree term?
+4.8e-6
+c.   What is R2 for the model? What is? Which is more appropriate in evaluating the model? 2-adjustedRd.  
+.5117, adjusted R-squared is .5009, I will use R-squared because we only have one predictor and adjusted is meaningless. 
+Graph the Plot of Fitted Model and include it in your solutions. ***
+
+
+```{r}
+model2 <- lm(formula=`MPG Highway`~Horsepower+I(Horsepower^2),data=cars)
+summary(model2)
+
+
+
+```
+
+
+
+
+```{r}
+plot(x=cars$Horsepower,y=cars$`MPG Highway`)
+lines(cars$Horsepower, fitted(model2), col="blue")
+```
+
+***
+3.   Try constructing higher order models until you are satisfied you have found the best polynomial model. 
+a.   Write out your final model or display the analysis window for it so I can see the model you settled on.
+The 4th degree polynomial funtion has the nighest adjusted R-squared
+b.   What is adjustedR2?
+.542
+c.   Include the Plot of Fitted Model and Residuals versus X output.
+d.   Predict the highway mileage of a car with 150 horsepower. Also construct 95% confidence and prediction intervals for such a car.
+***
+
+```{r}
+# model3 <- lm(formula=`MPG Highway`~Horsepower+I(Horsepower^2)+I(Horsepower^3),data=cars)
+model4 <- lm(formula=`MPG Highway`~Horsepower+I(Horsepower^2)+I(Horsepower^3)+I(Horsepower^4),data=cars)
+# model5 <- lm(formula=`MPG Highway`~Horsepower+I(Horsepower^2)+I(Horsepower^3)+I(Horsepower^4)+I(Horsepower^5),data=cars)
+# summary(model3)
+summary(model4)
+# summary(model5)
+```
+
+
+```{r}
+plot(x=cars$Horsepower,y=cars$`MPG Highway`)
+# lines(cars$Horsepower, fitted(model4), col="blue")
+lines(spline(cars$Horsepower, fitted(model4)))
+```
+
+```{r}
+
+plot(model4$fitted,model4$resid)
+
+```
+
+
+
+```{r}
+
+test = data.frame(
+  Horsepower = 150
+)
+predict(model4,newdata=test,interval='confidence')
+
+```
